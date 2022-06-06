@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
+using TMPro;
 
 public class MainManager : MonoBehaviour
 {
@@ -11,17 +13,45 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text nameText;
     public GameObject GameOverText;
-    
+    public Text bestText;
+
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
 
-    
+    [System.Serializable]
+    public class BestScore
+    {
+        public string name;
+        public int score;
+    }
+    public void SaveScore()
+    {
+        BestScore highscore = new BestScore();
+        highscore.name = GameManager.Instance.playerName;
+        highscore.score = m_Points;
+        string json = JsonUtility.ToJson(highscore);
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+    public void LoadScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            BestScore highscore = JsonUtility.FromJson<BestScore>(json);
+            bestText.text = "Best score: " + highscore.name + " - " + highscore.score;
+            
+        }
+    }
+
     // Start is called before the first frame update
     void Start()
     {
+        nameText.text = GameManager.Instance.playerName;
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -36,6 +66,7 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        LoadScore();
     }
 
     private void Update()
@@ -55,6 +86,7 @@ public class MainManager : MonoBehaviour
         }
         else if (m_GameOver)
         {
+            SaveScore();
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -70,6 +102,7 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
